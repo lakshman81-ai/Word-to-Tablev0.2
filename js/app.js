@@ -29,8 +29,24 @@ const appState = {
 // ═══════════ Mode Detection ═══════════
 
 async function detectMode() {
+    // 1. Check if hosted on GitHub Pages (avoid 404 console error)
+    if (window.location.hostname.includes('github.io')) {
+        appState.mode = 'browser';
+        updateModeUI();
+        return;
+    }
+
     try {
-        const resp = await fetch('/extract', { method: 'HEAD' });
+        // 2. Try to connect to server with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+        const resp = await fetch('/extract', {
+            method: 'HEAD',
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
         if (resp.ok) {
             appState.mode = 'local';
         } else {
