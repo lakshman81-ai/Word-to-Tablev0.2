@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Table Extractor</title>
+    <meta name="description"
+        content="Extract tables from Word documents (.docx) with page-aware detection, approve/reject workflow, and CSV export.">
+    <meta name="version" content="2.2.3">
+    <link rel="stylesheet" href="css/styles.css?v=2.2.3">
+    <link rel="stylesheet" href="css/validator.css?v=2.2.3">
+</head>
+
+<body>
+
+    <!-- ═══ Header ═══ -->
+    <header>
+        <h1>Word Table Extractor</h1>
+        <div class="controls-bar">
+            <input type="file" id="file_upload" accept=".docx">
+            <select id="extraction_mode">
+                <option value="Standard">Standard (Rules)</option>
+                <option value="Smart" selected>Smart (Heuristic)</option>
+                <option value="Both">Both</option>
+            </select>
+            <button id="btn_extract" onclick="extractTables()">🔍 Extract Tables</button>
+            <button id="btn_load_json" onclick="loadJSONFile()" style="display:none">📄 Load JSON</button>
+            <span id="status">Ready</span>
+        </div>
+    </header>
+
+    <!-- ═══ Main Tab Bar ═══ -->
+    <nav class="main-tabs">
+        <button id="btn-tab-validator" class="main-tab-btn" data-tab="validator" onclick="switchMainTab('validator')" style="display:none; color: var(--yellow); border-bottom-color: var(--yellow);">⚠️ Smart Validator</button>
+        <button class="main-tab-btn active" data-tab="results" onclick="switchMainTab('results')">Results</button>
+        <button class="main-tab-btn" data-tab="batch" onclick="switchMainTab('batch')">Output-Batch</button>
+        <button class="main-tab-btn" data-tab="edit" onclick="switchMainTab('edit')">Edit Tables (Beta)</button>
+        <button class="main-tab-btn" data-tab="settings" onclick="switchMainTab('settings')">Settings</button>
+        <button class="main-tab-btn" data-tab="stray" onclick="switchMainTab('stray')">Stray Text</button>
+        <button class="main-tab-btn" data-tab="logs" onclick="switchMainTab('logs')">Logs</button>
+    </nav>
+
+    <!-- ═══ Tab Content ═══ -->
+    <main>
+        <div id="tab-validator" class="tab-content" style="display:none"></div>
+        <div id="tab-results" class="tab-content">
+            <div class="empty-state">
+                <div class="icon">📊</div>
+                <h3>No tables extracted yet</h3>
+                <p>Upload a .docx file and click Extract to begin.</p>
+            </div>
+        </div>
+        <div id="tab-batch" class="tab-content" style="display:none"></div>
+        <div id="tab-edit" class="tab-content" style="display:none"></div>
+        <div id="tab-settings" class="tab-content" style="display:none"></div>
+        <div id="tab-stray" class="tab-content" style="display:none"></div>
+        <div id="tab-logs" class="tab-content" style="display:none"></div>
+    </main>
+
+    <!-- ═══ Loading Overlay ═══ -->
+    <div id="loading-overlay">
+        <div class="spinner-container">
+            <div class="spinner"></div>
+            <p>Extracting tables...</p>
+        </div>
+    </div>
+
+    <!-- ═══ Footer Status Bar ═══ -->
+    <footer id="status-bar">
+        <span id="sb-mode">Mode: detecting...</span>
+        <!-- Record Feature -->
+        <button id="btn-record-status" class="status-btn record-btn dull" onclick="toggleRecording()" style="display:none; margin-left:10px;">
+            ⏺️ Record
+        </button>
+        <div id="icon-brain-status" class="brain-icon dull" title="Memory (No events recorded)" style="margin-left: 6px;">🧠</div>
+        <!-- End Record Feature -->
+        <span id="sb-file" style="margin-left: auto;">No file loaded</span>
+        <span id="sb-pages">Pages: 0</span>
+        <span id="sb-tables">Tables: 0</span>
+        <span id="sb-approved">✅ 0</span>
+        <span id="sb-rejected">❌ 0</span>
+        <span id="sb-version" style="margin-left: 15px; color: var(--text-muted); font-size: 0.75rem;"></span>
+    </footer>
+
+    <!-- ═══ Scripts ═══ -->
+    <!-- JSZip for browser-based .docx extraction -->
+    <script src="js/lib/jszip.min.js?v=2.2.3"></script>
+
+    <!-- Modules -->
+    <script src="js/settings_tab.js?v=2.2.3"></script>
+    <script src="js/validator.js?v=2.2.3"></script>
+    <script src="js/auto_namer.js?v=2.2.3"></script>
+
+    <!-- Core -->
+    <script src="js/docx_parser.js?v=2.2.3"></script>
+    <script src="js/app.js?v=2.2.3"></script>
+    <!-- Tab Renderers -->
+    <script src="js/results_tab.js?v=2.2.3"></script>
+
+</body>
+
+</html>

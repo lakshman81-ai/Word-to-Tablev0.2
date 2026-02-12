@@ -1,0 +1,39 @@
+# Build outputs
+dist/
+build/
+*.exe
+*.spec
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Test artifacts
+test_output.txt
+test_phase2.docx
+test_pages.py
+server.log
+benchmark_report.txt
+
+# Old PyScript files
+test_pyscript.html
+
+# System
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Data files (user uploads)
+Public/Tmp/
+Public/*.doc
+Public/*.docx
+Docs/R5.doc
+
+# Batch files (local only)
+build_executable.bat
+run_desktop.bat

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Table Extractor (AI Powered)</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@pyscript/core@0.6.1/dist/core.css">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@pyscript/core@0.6.1/dist/core.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; max-width: 900px; margin: 0 auto; color: #333; }
+        h1 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .container { display: flex; gap: 20px; flex-wrap: wrap; }
+        .main-panel { flex: 1; min-width: 300px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .log-panel { flex: 1; min-width: 300px; background: #fdfdfd; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #eee; }
+        .controls { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        select, input[type="file"] { width: 100%; padding: 8px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
+        button:hover { background: #2980b9; }
+        button:disabled { background: #bdc3c7; cursor: not-allowed; }
+        button.secondary { background: #95a5a6; margin-top: 10px; font-size: 14px; padding: 5px 10px; width: auto; }
+        button.secondary:hover { background: #7f8c8d; }
+        #output { margin-top: 20px; }
+        .download-link { display: block; margin: 10px 0; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: #333; transition: background 0.2s; }
+        .download-link:hover { background: #f0f8ff; border-color: #3498db; }
+        .meta-info { font-size: 0.85em; color: #7f8c8d; margin-top: 5px; }
+        #loading { display: none; color: #e67e22; font-weight: bold; text-align: center; margin: 10px 0; }
+        #log_output { width: 100%; height: 300px; background: #2c3e50; color: #ecf0f1; font-family: 'Consolas', monospace; font-size: 12px; padding: 10px; border-radius: 4px; overflow-y: auto; white-space: pre-wrap; box-sizing: border-box; }
+        .log-entry { margin-bottom: 2px; border-bottom: 1px solid #34495e; padding-bottom: 2px; }
+        .log-INFO { color: #ecf0f1; }
+        .log-DEBUG { color: #95a5a6; }
+        .log-WARNING { color: #f39c12; }
+        .log-ERROR { color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <h1>Word Table Extractor</h1>
+    <div class="container">
+        <div class="main-panel">
+            <h3>Configuration</h3>
+            <div class="controls">
+                <label for="file_upload">1. Select Document (.docx only)</label>
+                <input type="file" id="file_upload" accept=".docx" />
+                <div id="file_warning" style="display:none; color: #e74c3c; font-size: 0.9em; margin-bottom: 10px;">
+                    Warning: Only .docx files are supported. Convert .doc files to .docx first.
+                </div>
+                <label for="extraction_mode">2. Extraction Mode</label>
+                <select id="extraction_mode">
+                    <option value="Standard">Standard (Rule-Based)</option>
+                    <option value="Smart" selected>Smart (Heuristic)</option>
+                    <option value="Both">Both (Compare)</option>
+                </select>
+                <button id="btn_process">Extract Tables</button>
+                <div id="pyscript_status" style="color: #f39c12; font-size: 0.9em; margin-top: 5px;">
+                    Loading PyScript... Please wait before clicking the button.
+                </div>
+                <div id="loading">Processing... please wait...</div>
+            </div>
+            <h3>Results</h3>
+            <div id="output"></div>
+        </div>
+        <div class="log-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0;">Execution Logs</h3>
+                <div>
+                    <button class="secondary" id="btn_clear_logs">Clear</button>
+                    <button class="secondary" id="btn_save_logs">Save</button>
+                </div>
+            </div>
+            <div id="log_output"></div>
+        </div>
+    </div>
+
+    <script type="py" config='{"packages": ["pandas", "python-docx"]}' terminal>
+import asyncio
+import js
+from js import document, Uint8Array, File, window
+import io
+import os
+import logging
+import pandas as pd
+from datetime import datetime
+
+print("PyScript initialization started...")
+
+# --- Custom Web Logger ---
+class WebLogHandler(logging.Handler):
+    def __init__(self, output_element_id):
+        super().__init__()
+        self.output_element_id = output_element_id
+        self.formatter = logging.Formatter('%(asctime)s | %(levelname)-7s | %(message)s', datefmt='%H:%M:%S')
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            log_div = document.getElementById(self.output_element_id)
+            entry = document.createElement("div")
+            entry.className = f"log-entry log-{record.levelname}"
+            entry.innerText = msg
+            log_div.appendChild(entry)
+            log_div.scrollTop = log_div.scrollHeight
+        except Exception:
+            self.handleError(record)
+
+# Setup Logging
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+for h in logger.handlers[:]:
+    logger.removeHandler(h)
+web_handler = WebLogHandler("log_output")
+logger.addHandler(web_handler)
+
+def validate_file_upload(*args):
+    file_input = document.getElementById('file_upload')
+    file_warning = document.getElementById('file_warning')
+    if file_input.files.length > 0:
+        file = file_input.files.item(0)
+        if not file.name.lower().endswith('.docx'):
+            file_warning.style.display = 'block'
+            logger.warning(f"Invalid file type: {file.name}. Only .docx files are supported.")
+            return False
+        else:
+            file_warning.style.display = 'none'
+            return True
+    return True
+
+file_input_el = document.getElementById('file_upload')
+file_input_el.addEventListener('change', validate_file_upload)
+
+def clear_logs(*args):
+    log_div = document.getElementById("log_output")
+    log_div.innerHTML = ""
+
+def save_logs(*args):
+    log_div = document.getElementById("log_output")
+    content = log_div.innerText
+    blob = js.Blob.new([content], {type : 'text/plain'})
+    url = js.URL.createObjectURL(blob)
+    link = document.createElement("a")
+    link.href = url
+    link.download = f"extraction_logs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+    link.click()
+
+async def process_file(*args):
+    import smart_table_extractor
+    import word_to_table
+
+    file_input = document.getElementById('file_upload')
+    mode_select = document.getElementById('extraction_mode')
+    loading = document.getElementById('loading')
+    btn = document.getElementById('btn_process')
+    out_div = document.getElementById("output")
+
+    mode = mode_select.value
+
+    if not file_input.files.length:
+        window.alert("Please select a file first.")
+        return
+
+    if not validate_file_upload():
+        window.alert("Please select a .docx file. .doc files are not supported.")
+        return
+
+    loading.style.display = "block"
+    btn.disabled = True
+    out_div.innerHTML = ""
+    logger.info(f"--- Starting Extraction: Mode={mode} ---")
+
+    try:
+        file = file_input.files.item(0)
+        array_buffer = await file.arrayBuffer()
+        data = Uint8Array.new(array_buffer)
+
+        input_filename = "input.docx"
+        with open(input_filename, "wb") as f:
+            f.write(bytearray(data))
+
+        results = []
+
+        # STANDARD MODE
+        if mode in ["Standard", "Both"]:
+            logger.info("Running Standard Extraction (Rules)...")
+            try:
+                data_store = word_to_table.parse_docx(input_filename)
+                for key, dfs in data_store.items():
+                    for i, df in enumerate(dfs):
+                        results.append({
+                            "df": df,
+                            "meta": {"confidence": "Standard Rule", "start_row": "N/A", "type": key},
+                            "source": "Standard"
+                        })
+            except Exception as e:
+                logger.error(f"Standard Extraction Error: {e}")
+
+        # SMART MODE
+        if mode in ["Smart", "Both"]:
+            logger.info("Running Smart Extraction (Heuristic)...")
+            try:
+                extractor = smart_table_extractor.SmartTableExtractor(input_filename)
+                smart_results = extractor.extract_all()
+                for res in smart_results:
+                    res["source"] = "Smart"
+                    results.append(res)
+            except Exception as e:
+                logger.error(f"Smart Extraction Error: {e}")
+
+        logger.info(f"Processing Complete. Found {len(results)} tables.")
+
+        if not results:
+            out_div.innerHTML = "<p>No tables found.</p>"
+        else:
+            for i, res in enumerate(results):
+                df = res['df']
+                source = res.get("source", "Unknown")
+                csv_content = df.to_csv(index=False)
+
+                blob = js.Blob.new([csv_content], {type : 'text/csv'})
+                url = js.URL.createObjectURL(blob)
+
+                link = document.createElement("a")
+                link.href = url
+                link.download = f"{file.name}_{source}_Table_{i+1}.csv"
+                link.className = "download-link"
+
+                title = document.createElement("div")
+                title.innerText = f"Table {i+1} ({source})"
+                title.style.fontWeight = "bold"
+
+                meta = document.createElement("div")
+                meta.className = "meta-info"
+                meta_text = ""
+                if source == "Smart":
+                    meta_text = f"Confidence: {res['meta']['confidence']} | Rows: {len(df)}"
+                else:
+                    meta_text = f"Type: {res['meta']['type']} | Rows: {len(df)}"
+
+                meta.innerText = meta_text
+
+                link.appendChild(title)
+                link.appendChild(meta)
+                out_div.appendChild(link)
+
+    except Exception as e:
+        window.alert(f"Error: {str(e)}")
+        logger.error(f"Critical Error: {str(e)}")
+        print(e)
+    finally:
+        loading.style.display = "none"
+        btn.disabled = False
+
+# Wire up buttons via addEventListener (new PyScript API doesn't use py-click)
+btn_clear = document.getElementById("btn_clear_logs")
+btn_clear.addEventListener("click", clear_logs)
+
+btn_save = document.getElementById("btn_save_logs")
+btn_save.addEventListener("click", save_logs)
+
+btn_process = document.getElementById("btn_process")
+btn_process.addEventListener("click", process_file)
+
+# Signal that PyScript is fully loaded
+print("PyScript fully initialized and ready!")
+logger.info("PyScript initialization complete. Ready to extract tables.")
+pyscript_status = document.getElementById("pyscript_status")
+pyscript_status.innerText = "PyScript is ready! Select a file and extract tables."
+pyscript_status.style.color = "#27ae60"
+
+    </script>
+</body>
+</html>

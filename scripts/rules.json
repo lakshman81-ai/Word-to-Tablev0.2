@@ -1,0 +1,216 @@
+[
+  {
+    "id": "Bolting",
+    "target": "Bolting_Data",
+    "context_action": "full",
+    "conditions": [
+      {"type": "header_contains", "value": "DN nr inch"},
+      {"type": "header_contains", "value": "MESC number"}
+    ]
+  },
+  {
+    "id": "Assemblies",
+    "target": "Assemblies_Data",
+    "context_action": "truncated",
+    "conditions": [
+      {"type": "header_contains", "value": "Column 1"},
+      {"type": "header_contains", "value": "Column 2"}
+    ]
+  },
+  {
+    "id": "Reducing_Piping_1",
+    "target": "Reducing_Piping_Data",
+    "extra_cols": {"Table Type": "RED_PIP_COMP1"},
+    "conditions": [
+      {"type": "header_contains", "value": "Run x Br"},
+      {"type": "header_contains", "value": "RECB"}
+    ]
+  },
+  {
+    "id": "Comp_Br_Name",
+    "target": "Reducing_Piping_Data",
+    "extra_cols": {"Table Type": "COMP_BR_NAME"},
+    "conditions": [
+      {"type": "header_contains", "value": "Comp.name"},
+      {"type": "header_contains", "value": "Description"}
+    ]
+  },
+  {
+    "id": "Comp_Th_Name",
+    "target": "Reducing_Piping_Data",
+    "extra_cols": {"Table Type": "COMP_TH_NAME"},
+    "conditions": [
+      {"type": "header_contains", "value": "Length (mm)"},
+      {"type": "header_contains", "value": "MESC number"}
+    ]
+  },
+  {
+    "id": "Reducing_Piping_2",
+    "target": "Reducing_Piping_Data",
+    "extra_cols": {"Table Type": "RED_PIP_COMP2"},
+    "conditions": [
+      {"type": "header_contains", "value": "Branch Run pipe"},
+      {"type": "header_contains", "value": "BN3P"}
+    ]
+  },
+  {
+    "id": "Comp_Br_BN3T",
+    "target": "Reducing_Piping_Data",
+    "extra_cols": {"Table Type": "COMP_BR_BN3T"},
+    "conditions": [
+      {"type": "header_contains", "value": "Branch Run pipe"},
+      {"type": "header_contains", "value": "BN3T"}
+    ]
+  },
+  {
+    "id": "Schedule_Table",
+    "target": "Schedule_Table",
+    "conditions": [
+      {"type": "header_contains", "value": "DN"},
+      {"type": "header_contains", "value": "Schedule"}
+    ]
+  },
+  {
+    "id": "Branch_Conn",
+    "target": "Branch_Conn",
+    "conditions": [
+      {"type": "header_contains", "value": "Run size"},
+      {"type": "header_contains", "value": "50"},
+      {"type": "header_contains", "value": "80"}
+    ]
+  },
+  {
+    "id": "Code_Exp",
+    "target": "Code_Exp",
+    "conditions": [
+      {"type": "header_contains", "value": "Code"},
+      {"type": "header_contains", "value": "Explanation of characters"}
+    ]
+  },
+  {
+    "id": "Piping_Pg4_Matrix",
+    "target": "VARIOUS",
+    "description": "Complex routing for Page 4 Matrix",
+    "conditions": [
+      {"type": "or", "conditions": [
+          {"type": "header_contains", "value": "PIPE"},
+          {"type": "data_contains", "value": "PIPE"}
+      ]},
+      {"type": "header_contains", "value": "Item description"},
+      {"type": "header_contains", "value": "MESC"},
+      {"type": "header_regex", "value": "\\b15\\b.*\\b600\\b"}
+    ],
+    "subrules": [
+        {
+            "target": "Pipe_Table",
+            "conditions": [{"type": "data_contains", "value": "PIPE"}]
+        },
+        {
+            "target": "Flange_Table",
+            "conditions": [
+                {"type": "or", "conditions": [
+                    {"type": "data_contains", "value": "Blind flange"},
+                    {"type": "data_contains", "value": "Spacer ring"}
+                ]}
+            ]
+        },
+        {
+            "target": "Fittings_Table",
+            "conditions": [
+                {"type": "or", "conditions": [
+                    {"type": "data_contains", "value": "Cap bw"},
+                    {"type": "data_contains", "value": "Elbow"}
+                ]}
+            ]
+        },
+        {
+            "target": "Piping_Comps_Pg4",
+            "conditions": []
+        }
+    ]
+  },
+  {
+    "id": "Pipe_Page3",
+    "target": "Pipe_Table",
+    "conditions": [
+        {"type": "data_contains", "value": "PIPE"}
+    ]
+  },
+  {
+    "id": "Flange",
+    "target": "Flange_Table",
+    "conditions": [
+        {"type": "or", "conditions": [
+            {"type": "header_contains", "value": "Flange"},
+            {"type": "data_contains", "value": "Flange"}
+        ]},
+        {"type": "or", "conditions": [
+            {"type": "data_regex", "value": "\\bFL\\b"},
+            {"type": "data_regex", "value": "\\bNF\\b"}
+        ]}
+    ]
+  },
+  {
+    "id": "Fittings",
+    "target": "Fittings_Table",
+    "conditions": [
+        {"type": "context_contains_ignore_case", "value": "fittings"},
+        {"type": "not_context_contains_ignore_case", "value": "reducing"},
+        {"type": "header_contains_ignore_case", "value": "fittings"},
+        {"type": "not_header_contains_ignore_case", "value": "reducing"}
+    ]
+  },
+  {
+    "id": "Reducing_Fittings",
+    "target": "Red_Fit_Table",
+    "conditions": [
+        {"type": "or", "conditions": [
+            {"type": "header_contains", "value": "Reducing fittings"},
+            {"type": "context_contains", "value": "Reducing fittings"}
+        ]},
+        {"type": "or", "conditions": [
+             {"type": "data_regex", "value": "\\bBN.."},
+             {"type": "data_regex", "value": "\\bTE.."},
+             {"type": "data_regex", "value": "\\bBR.."}
+        ]}
+    ]
+  },
+  {
+    "id": "Valves",
+    "target": "Valves_Table",
+    "conditions": [
+        {"type": "or", "conditions": [
+            {"type": "header_contains", "value": "Valves"},
+            {"type": "context_contains", "value": "Valves"},
+            {"type": "data_regex", "value": "\\b...F\\b"}
+        ]},
+        {"type": "or", "conditions": [
+            {"type": "header_contains", "value": "Valves"},
+            {"type": "context_contains", "value": "Valves"},
+            {"type": "data_contains", "value": "Valve"}
+        ]}
+    ]
+  },
+  {
+    "id": "Instruments",
+    "target": "Instruments_Table",
+    "conditions": [
+        {"type": "or", "conditions": [
+            {"type": "header_contains", "value": "Instruments"},
+            {"type": "context_contains", "value": "Instruments"},
+            {"type": "data_regex", "value": "\\bTW.."}
+        ]}
+    ]
+  },
+  {
+    "id": "Miscellaneous",
+    "target": "Misc_Table",
+    "conditions": [
+        {"type": "or", "conditions": [
+             {"type": "header_contains", "value": "Miscellaneous"},
+             {"type": "context_contains", "value": "Miscellaneous"},
+             {"type": "data_contains", "value": "Miscellaneous"}
+        ]}
+    ]
+  }
+]
