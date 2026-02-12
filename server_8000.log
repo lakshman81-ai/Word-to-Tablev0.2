@@ -1,0 +1,8 @@
+/app/server.py:11: DeprecationWarning: 'cgi' is deprecated and slated for removal in Python 3.13
+  import cgi
+Traceback (most recent call last):
+  File "/app/server.py", line 20, in <module>
+    import word_to_table
+  File "/app/scripts/word_to_table.py", line 1, in <module>
+    import pandas as pd
+ModuleNotFoundError: No module named 'pandas'
